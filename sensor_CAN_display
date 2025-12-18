@@ -19,6 +19,7 @@ float engCoolantTemp = 0;
 float engOilPressure = 0;
 float transOilTemp = 0;
 float engOilTemp = 0;
+int   fanPWM = 0;
 
 void setup() { 
 
@@ -67,6 +68,11 @@ void loop() {
       int16_t scaledEngCoolant = (canMsg.data[0] << 8) | canMsg.data[1];
       engCoolantTemp = (scaledEngCoolant / 100.0) - 60.0;
     }
+
+    if (canMsg.can_id == 0x004) {
+       fanPWM = canMsg.data[0];
+    }
+
   }
 
   if((millis() - lastDisplayUpdate) > 100){
@@ -92,6 +98,10 @@ void loop() {
     OLED1.print("Oeldruck:");
     OLED1.print(engOilPressure, 3);
     OLED1.print("Bar");
+    
+    OLED1.setCursor(0,40);
+    OLED1.print("Luefter PWM:");
+    OLED1.print(fanPWM);    
 
     OLED1.display();
   }
