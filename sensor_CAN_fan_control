@@ -1,0 +1,120 @@
+#include <SPI.h>
+#include <mcp2515.h>
+
+#include <LiquidCrystal_I2C.h>        //I2C Display Lib
+
+int fanPin = 9;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);     //LCD Display
+
+MCP2515 mcp2515(10);
+
+struct can_frame canMsg;
+struct can_frame canMsg1;
+struct can_frame canMsg2;
+
+unsigned long lastSentMessage = millis();
+
+int transFanPwm = 255;
+int coolantFanPwm = 255;
+float transOilTemp = 0;
+
+int simulatedCoolantTemp;
+void setup() {
+  Serial.begin(2000000);
+
+  canMsg1.can_id  = 0x003;
+  canMsg1.can_dlc = 2;
+  
+  canMsg1.can_id  = 0x004;
+  canMsg1.can_dlc = 2;
+
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
+  mcp2515.setNormalMode();
+
+  TCCR1B = TCCR1B & 0b11111000 | 0x01;  // Set Timer 1 (pins 9, 10) to 31.25 kHz
+
+  lcd.init();                           //Initialize LCD Display 
+  lcd.backlight();                      //Start LED Backlight
+}
+
+void loop() {
+
+  simulatedCoolantTemp = map(analogRead(A0), 1023, 0, -20, 125);
+
+  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+    if (canMsg.can_id == 0x001 && canMsg.can_dlc >= 2) {
+      int16_t scaledTransOil = (canMsg.data[0] << 8) | canMsg.data[1];
+      transOilTemp = (scaledTransOil / 100.0) - 60.0;
+    }
+  }
+
+  if((millis() - lastSentMessage) > 500){
+    int16_t scaledCoolantTemp = (int16_t)((simulatedCoolantTemp + 60.0) * 100.0);
+
+    canMsg1.data[0] = (scaledCoolantTemp >> 8) & 0xFF;  // High byte
+    canMsg1.data[1] = scaledCoolantTemp & 0xFF;         // Low byte
+
+    mcp2515.sendMessage(&canMsg1);
+  }
+
+  //engine coolant based fan control
+
+  if(simulatedCoolantTemp < 87){
+  
+    coolantFanPwm = 0;
+  
+  } else if(simulatedCoolantTemp < 90){
+    
+    coolantFanPwm = map(simulatedCoolantTemp, 87, 90, 78, 102);
+
+  } else if(simulatedCoolantTemp < 95){
+
+    coolantFanPwm = map(simulatedCoolantTemp, 90, 95, 102, 179);
+
+  } else if(simulatedCoolantTemp < 100) {
+
+    coolantFanPwm = map(simulatedCoolantTemp, 95, 100, 179, 242);
+
+  } else {
+
+    coolantFanPwm = 255;
+
+  }
+
+  //transmission oil based fan control
+
+  if(transOilTemp < 90){
+  
+    transFanPwm = 0;
+  
+  } else if(transOilTemp < 100){
+    
+    transFanPwm = map(transOilTemp, 90, 100, 128, 179);
+
+  } else if(transOilTemp < 110){
+
+    transFanPwm = map(transOilTemp, 100, 110, 179, 230);
+
+  } else {
+
+    transFanPwm = 255;
+
+  }
+
+  int fanPWM = max(coolantFanPwm, transFanPwm);
+
+  analogWrite(fanPin, fanPWM);
+
+  lcd.setCursor(0,0);
+  lcd.print("Temp:");
+  lcd.print(simulatedCoolantTemp);
+  lcd.print("C     ");
+  
+  lcd.setCursor(0,1);
+  lcd.print("PWM:");
+  lcd.print(fanPWM);
+  lcd.print("     ");
+
+}
