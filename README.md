@@ -43,7 +43,11 @@ If you are interested in helping on this project, feel free to make PRs, open is
 
 
 Libraries I used:
+
 https://github.com/autowp/arduino-mcp2515
+
 https://github.com/wollewald/ADS1115_WE
+
 https://github.com/adafruit/Adafruit_SSD1306
+
 https://github.com/adafruit/Adafruit_MAX31865
