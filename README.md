@@ -20,24 +20,40 @@ In the Future I thought about building the following modules:
 I have also programmed the fan module to read the automatic transmissions Temp via the CAN-Bus and let the fan run even if the engine is not too hot, but the Automatic transmission is too hot.
 
 The hardware currently used:
+
 Arduino Nanos for the modules
+
 PT100 Temp Sensors
+
 MAX31865 PT100 Sensor Amplifiers
+
 MCP2515 CAN Controllers
+
 TJA1050 CAN Transceivers
+
 ADS1115 ADC for reading analog Sensors (Pressure)
+
 128x64 SSD1306 OLED Display
 
+
 What Hardware I want to add:
+
 Impulse counter to the speed output of the gauge cluster that goes into the Display Module.
+
 Analog Circuitry to measure original outside Temp Sensor
 
 
 What Hardware I want to change:
+
 ESP32 for the Display Module, to make it easy to configure through a WebUI
+
 Pi Pico for all other Modules because they are very fast and cheap.
+
 Change 128x64 SSD1306 to two 128 x 72 SSD1320 Displays side by side.
+
 They should fill out the visible Area of the Outside Temp Display cutout perfectly while still fitting into the original area in the Gauge Cluster
+
+
 
 If you are interested in helping on this project, feel free to make PRs, open issues and contact me via Discord @criscrafter
 
