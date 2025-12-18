@@ -15,19 +15,21 @@ struct can_frame canMsg2;
 
 unsigned long lastSentMessage = millis();
 
+int fanPWM = 0;
 int transFanPwm = 255;
 int coolantFanPwm = 255;
 float transOilTemp = 0;
 
-int simulatedCoolantTemp;
+float simulatedCoolantTemp = 0;
+
 void setup() {
   Serial.begin(2000000);
 
   canMsg1.can_id  = 0x003;
   canMsg1.can_dlc = 2;
   
-  canMsg1.can_id  = 0x004;
-  canMsg1.can_dlc = 2;
+  canMsg2.can_id  = 0x004;
+  canMsg2.can_dlc = 1;
 
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
@@ -41,7 +43,7 @@ void setup() {
 
 void loop() {
 
-  simulatedCoolantTemp = map(analogRead(A0), 1023, 0, -20, 125);
+  simulatedCoolantTemp = map(analogRead(A0), 1023, 0, -20, 120);
 
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
     if (canMsg.can_id == 0x001 && canMsg.can_dlc >= 2) {
@@ -56,7 +58,12 @@ void loop() {
     canMsg1.data[0] = (scaledCoolantTemp >> 8) & 0xFF;  // High byte
     canMsg1.data[1] = scaledCoolantTemp & 0xFF;         // Low byte
 
+    canMsg2.data[0] = fanPWM;
+
     mcp2515.sendMessage(&canMsg1);
+    mcp2515.sendMessage(&canMsg2);
+
+
   }
 
   //engine coolant based fan control
@@ -103,7 +110,7 @@ void loop() {
 
   }
 
-  int fanPWM = max(coolantFanPwm, transFanPwm);
+  fanPWM = max(coolantFanPwm, transFanPwm);
 
   analogWrite(fanPin, fanPWM);
 
